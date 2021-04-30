@@ -1,6 +1,10 @@
 package cn.xiaohupao.list.arraylist;
 
 import lombok.NonNull;
+import org.intellij.lang.annotations.Flow;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Range;
+import sun.misc.SharedSecrets;
 
 import java.io.Serializable;
 import java.util.*;
@@ -54,7 +58,7 @@ public class MyArrayList<E> extends AbstractList<E> implements List<E>, RandomAc
      * 通过指定容量的构造方法
      * @param initialCapacity 指定容量的大小
      */
-    public MyArrayList(int initialCapacity){
+    public MyArrayList(@Range(from = 0, to = Integer.MAX_VALUE) int initialCapacity){
         if (initialCapacity > 0){
             this.elementData = new Object[initialCapacity];
         }else if(initialCapacity == 0){
@@ -68,7 +72,7 @@ public class MyArrayList<E> extends AbstractList<E> implements List<E>, RandomAc
      * 通过指定的collection来创建ArrayList
      * @param c 要将元素放入改list的集合
      */
-    public MyArrayList(Collection<? extends E> c){
+    public MyArrayList(@NotNull @Flow(sourceIsContainer = true, targetIsContainer = true) Collection<? extends E> c){
         Object[] a = c.toArray();
         if ((size = a.length) != 0){
             if (c.getClass() == MyArrayList.class){
@@ -137,10 +141,6 @@ public class MyArrayList<E> extends AbstractList<E> implements List<E>, RandomAc
      * 要分配数组的最大的大小
      */
     private static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
-    @Override
-    public E get(int index) {
-        return null;
-    }
 
     /**
      * 扩容的真正方法
@@ -256,6 +256,360 @@ public class MyArrayList<E> extends AbstractList<E> implements List<E>, RandomAc
             return v;
         }catch (CloneNotSupportedException e){
             throw new InternalError(e);
+        }
+    }
+
+    /**
+     * 将ArrayList转为一个object数组
+     * @return
+     */
+    @Override
+    public Object[] toArray(){
+        return Arrays.copyOf(elementData, size);
+    }
+
+    /**
+     * 将ArrayList中的元素转为一个传入数组的类型
+     * 若传入数组的容量小于元素的个数则返回一个新的数组；
+     * 否则将元素拷贝到传入的数组中。
+     * @param a 传入的指定类型数组
+     * @param <T> 元素的类型
+     * @return 以数组的类型返回list中的元素
+     */
+    @Override
+    @SuppressWarnings("unchecked")
+    public <T> T[] toArray(T[] a){
+        if (a.length < size){
+            return (T[]) Arrays.copyOf(elementData, size, a.getClass());
+        }
+        System.arraycopy(elementData, 0, a, 0, size);
+        if (a.length > size){
+            a[size] = null;
+        }
+        return a;
+    }
+
+    /**
+     * 返回指定索引位置的元素
+     * @param index 指定的索引
+     * @return 指定索引的元素
+     */
+    @SuppressWarnings("unchecked")
+    E elementData(int index){
+        return (E) elementData[index];
+    }
+
+    /**
+     * 获取指定索引处的元素
+     * @param index 指定的索引
+     * @return 指定索引位置元素
+     */
+    @Override
+    public E get(int index){
+        rangeCheck(index);
+
+        return elementData(index);
+    }
+
+    /**
+     * 在指定索引位置跟新元素，并返回旧的元素
+     * @param index 指定索引
+     * @param element 插入元素
+     * @return 返回旧的元素
+     */
+    @Override
+    public E set(int index, E element){
+        rangeCheck(index);
+
+        E oldValue = elementData(index);
+        elementData[index] = element;
+        return oldValue;
+    }
+
+    /**
+     * 在最后插入一个元素
+     * @param e 插入的元素
+     * @return 若为true则表示插入成功
+     */
+    @Override
+    public boolean add(E e){
+        ensureCapacityInternal(size + 1);
+        elementData[size++] = e;
+        return true;
+    }
+
+    /**
+     * 在指定索引位置上插入元素
+     * @param index 指定索引
+     * @param element 待插入元素
+     */
+    @Override
+    public void add(int index, E element){
+        rangeCheckForAdd(index);
+
+        ensureCapacityInternal(size + 1);
+        System.arraycopy(elementData, index, elementData, index + 1, size - index);
+        elementData[index] = element;
+        size++;
+    }
+
+    /**
+     * 删除指定索引位置上的元素
+     * @param index 指定索引
+     * @return 返回删除的元素
+     */
+    @Override
+    public E remove(int index){
+        rangeCheck(index);
+
+        modCount++;
+        E oldValue = elementData(index);
+
+        int numMoved = size - index - 1;
+        if (numMoved > 0){
+            System.arraycopy(elementData, index + 1, elementData, index, numMoved);
+        }
+        elementData[--size] = null;
+        return oldValue;
+    }
+
+    /**
+     * 删除指定元素
+     * @param o 指定元素
+     * @return true则为删除成功
+     */
+    @Override
+    public boolean remove(Object o){
+        if (o == null){
+            for (int index = 0; index < size; index++){
+                if (elementData[index] == null){
+                    fastRemove(index);
+                    return true;
+                }
+            }
+        }else {
+            for (int index = 0; index < size; index++){
+                if (o.equals(elementData[index])){
+                    fastRemove(index);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 删除指定索引位置上的元素
+     * @param index 指定的索引
+     */
+    private void fastRemove(int index){
+        modCount++;
+        int numMoved = size - index - 1;
+        if (numMoved > 0){
+            System.arraycopy(elementData, index + 1, elementData, index, numMoved);
+        }
+        elementData[--size] = null;
+    }
+
+    /**
+     * 清空list
+     */
+    @Override
+    public void clear(){
+        modCount++;
+
+        for (int i = 0; i < size ; i++) {
+            elementData[i] = null;
+        }
+
+        size = 0;
+    }
+
+    /**
+     * 将所指定的集合中的元素添加到list的末尾中
+     * @param c 指定要添加的集合
+     * @return 返回true则表示添加成功
+     */
+    @Override
+    public boolean addAll(Collection<? extends E> c){
+        Object[] a = c.toArray();
+        int numNew = a.length;
+        ensureCapacityInternal(size + numNew);
+        System.arraycopy(a, 0, elementData, size, numNew);
+        size += numNew;
+        return numNew != 0;
+    }
+
+    /**
+     * 在指定索引位置将指定集合中的元素加入到list中
+     * @param index 指定的索引
+     * @param c 指定的集合
+     * @return 若为true则添加成功
+     */
+    @Override
+    public boolean addAll(int index, Collection<? extends E> c){
+        rangeCheckForAdd(index);
+
+        Object[] a = c.toArray();
+        int numNew = a.length;
+        ensureCapacityInternal(size + numNew);
+
+        int numMoved = size - index;
+        if (numMoved > 0){
+            System.arraycopy(elementData, index, elementData, index + numNew, numMoved);
+        }
+        System.arraycopy(a, 0, elementData, index, numNew);
+        size += numNew;
+        return numNew != 0;
+    }
+
+    /**
+     * 删除指定索引区间中的元素
+     * @param fromIndex 开始的索引
+     * @param toIndex 结束的索引
+     */
+    @Override
+    protected void removeRange(int fromIndex, int toIndex){
+        modCount++;
+        int numMoved = size - toIndex;
+        System.arraycopy(elementData, toIndex, elementData, fromIndex, numMoved);
+
+        int newSize = size - (toIndex - fromIndex);
+        for (int i = newSize; i < size; i++){
+            elementData[i] = null;
+        }
+        size = newSize;
+    }
+
+    /**
+     * add和addAll使用的检查索引规则
+     * @param index 传入要检查 的索引
+     */
+    private void rangeCheckForAdd(int index){
+        if (index > size || index < 0){
+            throw new IndexOutOfBoundsException(outOfBoundsMsg(index));
+        }
+    }
+
+    /**
+     * 检查索引规则
+     * @param index 传入要检查的索引
+     */
+    private void rangeCheck(int index){
+        if (index >= size){
+            throw new IndexOutOfBoundsException(outOfBoundsMsg(index));
+        }
+    }
+
+    /**
+     * 构造一个索引异常的信息
+     * @param index 传入检查的索引
+     * @return 异常信息
+     */
+    private String outOfBoundsMsg(int index){
+        return "Index: " + index + ", Size: " + size;
+    }
+
+    /**
+     * 移除与传入集合中元素相同的元素
+     * @param c 传入的集合
+     * @return true为操作成功
+     */
+    @Override
+    public boolean removeAll(Collection<?> c){
+        Objects.requireNonNull(c);
+        return batchRemove(c, false);
+    }
+
+    /**
+     * 保留与传入集合中元素相同的元素
+     * @param c 传入的集合
+     * @return true为操作成功
+     */
+    @Override
+    public boolean retainAll(Collection<?> c){
+        Objects.requireNonNull(c);
+        return batchRemove(c, true);
+    }
+
+    /**
+     * 移除与传入集合中元素相同的元素
+     * @param c 传入的集合
+     * @param complement 用于操作保留还是移除与传入集合相同元素的开关
+     * @return true为操作成功
+     */
+    private boolean batchRemove(Collection<?> c, boolean complement){
+        final Object[] elementData = this.elementData;
+        int r = 0, w = 0;
+        boolean modified = false;
+        //把需要移除的元素全部替换掉，不要移除的元素前移
+        try {
+            for (; r < size; r++){
+                if (c.contains(elementData[r]) == complement){
+                    elementData[w++] = elementData[r];
+                }
+            }
+        }finally {
+            if ( r != size){
+                System.arraycopy(elementData, r, elementData, w, size - r);
+                w += size - r;
+            }
+            if (w != size){
+                for (int i = w; i < size; i++){
+                    elementData[i] = null;
+                }
+                modCount += size - w;
+                size = w;
+                modified = true;
+            }
+        }
+        return modified;
+    }
+
+    /**
+     * 将ArrayList实例的状态保存到流
+     * @param s 序列化流
+     * @throws java.io.IOException
+     */
+    private void writeObject(java.io.ObjectOutputStream s) throws java.io.IOException{
+        int expectedModCount = modCount;
+        s.defaultWriteObject();
+
+        s.writeInt(size);
+
+        for (int i = 0; i < size; i++){
+            s.writeObject(elementData[i]);
+        }
+
+        if (modCount != expectedModCount){
+            throw new ConcurrentModificationException();
+        }
+    }
+
+    /**
+     * 将流读取成为一个对象，反序列化
+     * @param s 读取序列化流
+     * @throws java.io.IOException
+     * @throws ClassNotFoundException
+     */
+    private void readObject(java.io.ObjectInputStream s) throws java.io.IOException, ClassNotFoundException{
+        elementData = EMPTY_ELEMENTDATA;
+
+        //读取大小，以及隐藏的内容
+        s.defaultReadObject();
+        //读取容量
+        s.readInt();
+
+        if (size > 0){
+            int capacity = calculateCapacity(elementData, size);
+            SharedSecrets.getJavaOISAccess().checkArray(s, Object[].class, capacity);
+            ensureCapacityInternal(size);
+
+            Object[] a = elementData;
+
+            for (int i = 0; i < size; i++){
+                a[i] = s.readObject();
+            }
         }
     }
 
