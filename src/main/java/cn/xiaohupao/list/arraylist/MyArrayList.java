@@ -1,6 +1,5 @@
 package cn.xiaohupao.list.arraylist;
 
-import lombok.NonNull;
 import org.intellij.lang.annotations.Flow;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Range;
@@ -8,11 +7,14 @@ import sun.misc.SharedSecrets;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.function.Consumer;
 
 
 /**
  * 学习ArrayList源码
  * @author xiaohupao
+ * 实现Serializable,Cloneable,RandomAccess接口
+ * 这三个接口都是标记接口
  */
 public class MyArrayList<E> extends AbstractList<E> implements List<E>, RandomAccess, Cloneable, Serializable {
 
@@ -23,6 +25,7 @@ public class MyArrayList<E> extends AbstractList<E> implements List<E>, RandomAc
 
     /**
      * 默认初始化容量
+     * 默认为10
      */
     private static final int DEFAULT_CAPACITY = 10;
 
@@ -612,5 +615,369 @@ public class MyArrayList<E> extends AbstractList<E> implements List<E>, RandomAc
             }
         }
     }
+
+    @Override
+    public ListIterator<E> listIterator(int index){
+        if (index < 0 || index > size){
+            throw new IndexOutOfBoundsException("Index: " + index);
+        }
+        return new ListItr(index);
+    }
+
+    @Override
+    public ListIterator<E> listIterator(){
+        return new ListItr(0);
+    }
+
+    @Override
+    public Iterator<E> iterator(){
+        return new Itr();
+    }
+    /**
+     * ArrayList中的迭代器
+     */
+    private class Itr implements Iterator<E>{
+        //下一个元素的索引位置
+        int cursor;
+        //上一个元素的索引位置
+        int lastRet = -1;
+        //预期被修改的次数
+        int expectedModCount = modCount;
+
+        Itr(){}
+
+        /**
+         * 判断是否还有下一个元素
+         * @return true表示还有下一个元素
+         */
+        @Override
+        public boolean hasNext() {
+            return cursor != size;
+        }
+
+        @SuppressWarnings("unchecked")
+        @Override
+        public E next() {
+            checkForComodification();
+            int i = cursor;
+            if (i >= size){
+                throw new NoSuchElementException();
+            }
+            Object[] elementData = MyArrayList.this.elementData;
+            if (i >= elementData.length){
+                throw new ConcurrentModificationException();
+            }
+            cursor = i + 1;
+            return (E) elementData[lastRet = i];
+        }
+
+        @Override
+        public void remove(){
+            if (lastRet < 0){
+                throw new IllegalArgumentException();
+            }
+            checkForComodification();
+
+            try {
+                //调用ArrayList中的删除方法
+                MyArrayList.this.remove(lastRet);
+                //将游标指向删除元素的位置
+                cursor = lastRet;
+                //lastRet恢复默认值-1
+                lastRet = -1;
+                //将expectedModCount值和modCount同步，因为删除后modCount会+1
+                expectedModCount = modCount;
+            }catch (IndexOutOfBoundsException ex){
+                throw new ConcurrentModificationException();
+            }
+        }
+
+        @SuppressWarnings("unchecked")
+        @Override
+        public void forEachRemaining(Consumer<? super E> consumer){
+            Objects.requireNonNull(consumer);
+            final int size = MyArrayList.this.size;
+            int i = cursor;
+            if (i >= size){
+                return;
+            }
+            final Object[] elementData = MyArrayList.this.elementData;
+            if (i >= elementData.length){
+                throw new ConcurrentModificationException();
+            }
+            while (i != size && modCount == expectedModCount){
+                consumer.accept((E) elementData[i++]);
+            }
+
+            cursor = i;
+            lastRet = i - 1;
+            checkForComodification();
+        }
+
+        /**
+         * 不能在使用迭代器遍历的时候添加或删除元素，否则将抛出并发修改异常
+         * 实现fail-fast机制
+         */
+        final void checkForComodification(){
+            if (modCount != expectedModCount){
+                throw new ConcurrentModificationException();
+            }
+        }
+    }
+
+    private class ListItr extends Itr implements ListIterator<E>{
+        ListItr(int index){
+            super();
+            cursor = index;
+        }
+
+        /**
+         * 判断当前元素前面是否有元素
+         * @return
+         */
+        @Override
+        public boolean hasPrevious() {
+            return cursor != 0;
+        }
+
+        /**
+         * 返回集合当前元素的前一个元素
+         * 并将迭代器的位置移到前一个位置
+         * @return 上一个元素
+         */
+        @SuppressWarnings("unchecked")
+        @Override
+        public E previous() {
+            checkForComodification();
+            int i = cursor - 1;
+            if (i < 0){
+                throw new NoSuchElementException();
+            }
+            Object[] elementData = MyArrayList.this.elementData;
+            if (i >= elementData.length){
+                throw new ConcurrentModificationException();
+            }
+            //更改迭代器的游标值
+            cursor = i;
+            return (E) elementData[lastRet = i];
+        }
+
+        /**
+         * 返回当前位置的迭代器位置
+         * @return 迭代器的位置
+         */
+        @Override
+        public int nextIndex() {
+            return cursor;
+        }
+
+        /**
+         * 返回当前元素的前一个元素位置
+         * @return 当前迭代器前一个位置
+         */
+        @Override
+        public int previousIndex() {
+            return cursor - 1;
+        }
+
+        /**
+         * 利用迭代器更新元素
+         * @param e 要设置的元素
+         */
+        @Override
+        public void set(E e) {
+            if (lastRet < 0){
+                throw new IllegalStateException();
+            }
+            checkForComodification();
+
+            try {
+                MyArrayList.this.set(lastRet, e);
+            }catch (IndexOutOfBoundsException ex){
+                throw new ConcurrentModificationException();
+            }
+        }
+
+        /**
+         * 利用迭代器向集合中添加元素
+         * @param e 要添加的元素
+         */
+        @Override
+        public void add(E e) {
+            checkForComodification();
+
+            try {
+                int i = cursor;
+                MyArrayList.this.add(i, e);
+                cursor = i + 1;
+                lastRet = -1;
+                expectedModCount = modCount;
+            }catch (IndexOutOfBoundsException ex){
+                throw new ConcurrentModificationException();
+            }
+        }
+    }
+
+    /**
+     * 根据起始索引和结尾索引，获得到一个子序列
+     * @param fromIndex 起始索引
+     * @param toIndex 结尾索引
+     * @return 子序列
+     */
+    @Override
+    public List<E> subList(int fromIndex, int toIndex){
+        subListRangeCheck(fromIndex, toIndex, size);
+        return new SubList(this, 0, fromIndex, toIndex);
+    }
+
+    /**
+     * 检查传入索引位置的正确性
+     * @param fromIndex 起始索引
+     * @param toIndex 结尾索引
+     * @param size 元素的个数
+     */
+    static void subListRangeCheck(int fromIndex, int toIndex, int size){
+        if (fromIndex < 0){
+            throw new IndexOutOfBoundsException("fromIndex = " + fromIndex);
+        }
+        if (toIndex > size){
+            throw new IndexOutOfBoundsException("toIndex = " + toIndex);
+        }
+
+        if (fromIndex > toIndex){
+            throw new IllegalArgumentException("fromIndex(" + fromIndex +
+                    ") > toIndex(" + toIndex + ")");
+        }
+    }
+
+    /**
+     * 子序列内部类
+     * 继承AbstractList
+     * 实现RandomAccess(随机访问)接口
+     */
+    private class SubList extends AbstractList<E> implements RandomAccess{
+        private final AbstractList<E> parent;
+        private final int parentOffset;
+        private final int offset;
+        int size;
+
+        /**
+         * 子序列的构造方法
+         * @param parent 父类
+         * @param offset 偏移量
+         * @param fromIndex 起始索引
+         * @param toIndex 结尾索引
+         */
+        SubList(AbstractList<E> parent, int offset, int fromIndex, int toIndex){
+            this.parent = parent;
+            this.parentOffset = fromIndex;
+            this.offset = offset + fromIndex;
+            this.size = toIndex - fromIndex;
+            this.modCount = MyArrayList.this.modCount;
+        }
+
+        @Override
+        public E set(int index, E e){
+            rangeCheck(index);
+            checkForComodification();
+            E oldValue = MyArrayList.this.elementData(offset + index);
+            MyArrayList.this.elementData[offset + index] = e;
+            return oldValue;
+        }
+
+        @Override
+        public E get(int index) {
+            rangeCheck(index);
+            checkForComodification();
+            return MyArrayList.this.elementData(offset + index);
+        }
+
+        @Override
+        public int size() {
+            checkForComodification();
+            return this.size;
+        }
+
+        @Override
+        public void add(int index, E e){
+            rangeCheckForAdd(index);
+            checkForComodification();
+            parent.add(parentOffset + index, e);
+            this.modCount = parent.modCount;
+            this.size++;
+        }
+
+        @Override
+        public E remove(int index){
+            rangeCheck(index);
+            checkForComodification();
+            E result = parent.remove(parentOffset + index);
+            this.modCount = parent.modCount;
+            this.size--;
+            return result;
+        }
+
+        @Override
+        protected void removeRange(int fromIndex, int toIndex){
+            checkForComodification();
+            parent.removeRange(parentOffset + fromIndex, parentOffset + toIndex);
+            this.modCount = parent.modCount;
+            this.size -= toIndex - fromIndex;
+        }
+
+        @Override
+        public boolean addAll(Collection<? extends E> c){
+            return addAll(this.size, c);
+        }
+
+        @Override
+        public boolean addAll(int index, Collection<? extends E> c){
+            rangeCheckForAdd(index);
+            int cSize = c.size();
+            if (cSize == 0){
+                return false;
+            }
+            checkForComodification();
+            parent.addAll(parentOffset + index, c);
+            this.modCount = parent.modCount;
+            this.size += cSize;
+            return true;
+        }
+
+        @Override
+        public List<E> subList(int fromIndex, int toIndex){
+            subListRangeCheck(fromIndex, toIndex, size);
+            return new SubList(this, offset, fromIndex, toIndex);
+        }
+
+        private void rangeCheck(int index){
+            if (index < 0 || index >= this.size){
+                throw new IndexOutOfBoundsException(outOfBoundsMsg(index));
+            }
+        }
+
+        private void rangeCheckForAdd(int index){
+            if (index < 0 || index > this.size){
+                throw new IndexOutOfBoundsException(outOfBoundsMsg(index));
+            }
+        }
+
+        private String outOfBoundsMsg(int index){
+            return "Index: " + index + ", Size: " + this.size;
+        }
+
+        private void checkForComodification(){
+            if (MyArrayList.this.modCount != this.modCount){
+                throw new ConcurrentModificationException();
+            }
+        }
+
+        @Override
+        public Spliterator<E> spliterator(){
+            checkForComodification();
+            return new ArrListSpliterator<E>(MyArrayList.this, offset, offset + this.size, this.modCount);
+        }
+    }
+
 
 }
