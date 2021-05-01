@@ -18,7 +18,7 @@ import java.util.function.UnaryOperator;
  * 实现Serializable,Cloneable,RandomAccess接口
  * 这三个接口都是标记接口
  */
-public class MyArrayList<E> extends AbstractList<E> implements List<E>, RandomAccess, Cloneable, Serializable {
+public class MyArrayList<E> extends MyAbstractList<E> implements List<E>, RandomAccess, Cloneable, Serializable {
 
     /**
      * 序列化ID
@@ -857,8 +857,8 @@ public class MyArrayList<E> extends AbstractList<E> implements List<E>, RandomAc
      * 继承AbstractList
      * 实现RandomAccess(随机访问)接口
      */
-    private class SubList extends AbstractList<E> implements RandomAccess{
-        private final AbstractList<E> parent;
+    private class SubList extends MyAbstractList<E> implements RandomAccess{
+        private final MyAbstractList<E> parent;
         private final int parentOffset;
         private final int offset;
         int size;
@@ -870,7 +870,7 @@ public class MyArrayList<E> extends AbstractList<E> implements List<E>, RandomAc
          * @param fromIndex 起始索引
          * @param toIndex 结尾索引
          */
-        SubList(AbstractList<E> parent, int offset, int fromIndex, int toIndex){
+        SubList(MyAbstractList<E> parent, int offset, int fromIndex, int toIndex){
             this.parent = parent;
             this.parentOffset = fromIndex;
             this.offset = offset + fromIndex;
