@@ -8,6 +8,8 @@ import sun.misc.SharedSecrets;
 import java.io.Serializable;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
 
 
 /**
@@ -972,12 +974,223 @@ public class MyArrayList<E> extends AbstractList<E> implements List<E>, RandomAc
             }
         }
 
+        /**
+         * 并行遍历迭代器
+         * @return 并行遍历迭代器
+         */
         @Override
         public Spliterator<E> spliterator(){
             checkForComodification();
-            return new ArrListSpliterator<E>(MyArrayList.this, offset, offset + this.size, this.modCount);
+            return new ArrayListSpliterator<E>(MyArrayList.this, offset, offset + this.size, this.modCount);
         }
     }
+
+    /**
+     * 使用Lambda表达式遍历集合
+     * @param action
+     */
+    @Override
+    public void forEach(Consumer<? super E> action){
+        Objects.requireNonNull(action);
+        final int expectedModCount = modCount;
+        @SuppressWarnings("unchecked")
+        final E[] elementData = (E[]) this.elementData;
+        final int size = this.size;
+        for (int i = 0; modCount == expectedModCount && i < size; i++){
+            action.accept(elementData[i]);
+        }
+        if (modCount != expectedModCount){
+            throw new ConcurrentModificationException();
+        }
+    }
+
+    /**
+     * 并行遍历迭代器
+     * @return 并行遍历迭代器
+     */
+    @Override
+    public Spliterator<E> spliterator(){
+        return new ArrayListSpliterator<>(this, 0, -1, 0);
+    }
+
+    static final class ArrayListSpliterator<E> implements Spliterator<E>{
+        //用于存放ArrayList对象
+        private final MyArrayList<E> list;
+        //起始位置(包含)
+        private int index;
+        //结束位置(不包含),-1表示到最后的位置
+        private int fence;
+        //存放list中的modCount
+        private int expectedModCount;
+
+        ArrayListSpliterator(MyArrayList<E> list, int origin, int fence, int expectedModCount){
+            this.list = list;
+            this.index = origin;
+            this.fence = fence;
+            this.expectedModCount = expectedModCount;
+        }
+
+        /**
+         * 获取结束位置
+         * @return 结束位置的索引
+         */
+        private int getFence(){
+            int hi;
+            MyArrayList<E> lst;
+            if ((hi = fence) < 0){
+                if ((lst = list) == null){
+                    hi = fence = 0;
+                }else{
+                    expectedModCount = lst.modCount;
+                    hi = fence = lst.size;
+                }
+            }
+            return hi;
+        }
+
+        /**
+         * 分割list
+         * @return 返回一个新分割出来的spliterator实例
+         */
+        @Override
+        public ArrayListSpliterator<E> trySplit(){
+            //hi为当前的结束位置，lo为起始位置，mid为中间位置
+            int hi = getFence(), lo = index, mid = (lo + hi) >>> 1;
+            return (lo >= mid) ? null :
+                    new ArrayListSpliterator<E>(list, lo, index = mid, expectedModCount);
+        }
+
+        /**
+         * 判断元素是否处理了
+         * @param action
+         * @return 若为true，表示可能还有元素未处理，若为false，则没有剩余元素处理了
+         */
+        @Override
+        public boolean tryAdvance(Consumer<? super E> action) {
+            if (action == null){
+                throw new NullPointerException();
+            }
+            //hi为当前的结束位置，i为起始位置
+            int hi = getFence(), i = index;
+            //还有剩余元素未处理
+            if (i < hi){
+                //处理i位置，index+1
+                index = i + 1;
+                @SuppressWarnings("unchecked") E e = (E) list.elementData[i];
+                action.accept(e);
+                //遍历时，结构发生变更，则抛出并发修改异常
+                if (list.modCount != expectedModCount){
+                    throw new ConcurrentModificationException();
+                }
+                return true;
+            }
+            return false;
+        }
+
+        @Override
+        public void forEachRemaining(Consumer<? super E> action){
+            int i, hi, mc;
+            MyArrayList<E> lst; Object[] a;
+            if (action == null){
+                throw new NullPointerException();
+            }
+            if ((lst = list) != null && (a = lst.elementData) != null){
+                if ((hi = fence) < 0){
+                    mc = lst.modCount;
+                    hi = lst.size;
+                }else{
+                    mc = expectedModCount;
+                }
+                if ((i = index) >= 0 && (index = hi) <= a.length){
+                    for (; i < hi; ++i){
+                        @SuppressWarnings("unchecked") E e = (E) a[i];
+                        action.accept(e);
+                    }
+                    if (lst.modCount == mc){
+                        return;
+                    }
+                }
+            }
+            throw new ConcurrentModificationException();
+        }
+
+
+        @Override
+        public long estimateSize() {
+            return (long) (getFence() - index);
+        }
+
+        @Override
+        public int characteristics() {
+            return Spliterator.ORDERED | Spliterator.SIZED | Spliterator.SUBSIZED;
+        }
+    }
+
+    /**
+     * 移除集合中满足给定条件的所有元素
+     * @param filter 移除元素的条件
+     * @return 若为true则移除成功
+     */
+    @Override
+    public boolean removeIf(Predicate<? super E> filter){
+        Objects.requireNonNull(filter);
+
+        int removeCount = 0;
+        final BitSet removeSet = new BitSet(size);
+        final int expectedModCount = modCount;
+        final int size = this.size;
+        for (int i=0; modCount == expectedModCount && i < size; i++){
+            @SuppressWarnings("unchecked")
+            final E element = (E) elementData[i];
+            if (filter.test(element)){
+                removeSet.set(i);
+                removeCount++;
+            }
+        }
+        if (modCount != expectedModCount){
+            throw new ConcurrentModificationException();
+        }
+
+        final boolean anyToRemove = removeCount > 0;
+        if (anyToRemove){
+            final int newSize = size - removeCount;
+            for (int i=0, j=0; (i < size) && (j < newSize); i++, j++){
+                i = removeSet.nextClearBit(i);
+                elementData[j] = elementData[i];
+            }
+
+            for (int k = newSize; k < size; k++){
+                elementData[k] = null;
+            }
+            this.size = newSize;
+            if (modCount != expectedModCount){
+                throw new ConcurrentModificationException();
+            }
+            modCount++;
+        }
+        return anyToRemove;
+    }
+
+    /**
+     * 替换满足条件的元素
+     * @param operator 给定的条件
+     */
+    @Override
+    @SuppressWarnings("unchecked")
+    public void replaceAll(UnaryOperator<E> operator){
+        Objects.requireNonNull(operator);
+        final int expectedModCount = modCount;
+        final int size = this.size;
+        for (int i=0; modCount == expectedModCount && i < size; i++){
+            elementData[i] = operator.apply((E) elementData[i]);
+        }
+        if (modCount != expectedModCount){
+            throw new ConcurrentModificationException();
+        }
+        modCount++;
+    }
+
+
 
 
 }
