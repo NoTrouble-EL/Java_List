@@ -9,7 +9,7 @@ import java.util.*;
  * @author xiaohupao
  * @date 2021/5/1
  */
-public abstract class MyAbstractList<E> extends AbstractCollection<E> implements List<E> {
+public abstract class MyAbstractList<E> extends AbstractCollection<E> implements MyList<E> {
 
     /**
      * 无参构造器
@@ -346,7 +346,7 @@ public abstract class MyAbstractList<E> extends AbstractCollection<E> implements
      */
     @NotNull
     @Override
-    public List<E> subList(int fromIndex, int toIndex) {
+    public MyList<E> subList(int fromIndex, int toIndex) {
         return (this instanceof RandomAccess ?
                 new RandomAccessSubList<>(this, fromIndex, toIndex) :
                 new SubList<>(this, fromIndex, toIndex));
@@ -683,7 +683,7 @@ class SubList<E> extends MyAbstractList<E>{
         };
     }
     @Override
-    public List<E> subList(int fromIndex, int toIndex){
+    public MyList<E> subList(int fromIndex, int toIndex){
         return new SubList<>(this, fromIndex, toIndex);
     }
 

@@ -18,7 +18,7 @@ import java.util.function.UnaryOperator;
  * 实现Serializable,Cloneable,RandomAccess接口
  * 这三个接口都是标记接口
  */
-public class MyArrayList<E> extends MyAbstractList<E> implements List<E>, RandomAccess, Cloneable, Serializable {
+public class MyArrayList<E> extends MyAbstractList<E> implements MyList<E>, RandomAccess, Cloneable, Serializable {
 
     /**
      * 序列化ID
@@ -827,7 +827,7 @@ public class MyArrayList<E> extends MyAbstractList<E> implements List<E>, Random
      * @return 子序列
      */
     @Override
-    public List<E> subList(int fromIndex, int toIndex){
+    public MyList<E> subList(int fromIndex, int toIndex){
         subListRangeCheck(fromIndex, toIndex, size);
         return new SubList(this, 0, fromIndex, toIndex);
     }
@@ -947,7 +947,7 @@ public class MyArrayList<E> extends MyAbstractList<E> implements List<E>, Random
         }
 
         @Override
-        public List<E> subList(int fromIndex, int toIndex){
+        public MyList<E> subList(int fromIndex, int toIndex){
             subListRangeCheck(fromIndex, toIndex, size);
             return new SubList(this, offset, fromIndex, toIndex);
         }
@@ -1190,7 +1190,20 @@ public class MyArrayList<E> extends MyAbstractList<E> implements List<E>, Random
         modCount++;
     }
 
-
+    /**
+     * ArrayList中根据传入比较器进行排序比较
+     * @param c 用于比较列表元素的比较器
+     */
+    @Override
+    @SuppressWarnings("unchecked")
+    public void sort(Comparator<? super E> c) {
+        final int expectedModCount = modCount;
+        Arrays.sort((E[]) elementData, 0, size, c);
+        if (modCount != expectedModCount){
+            throw new ConcurrentModificationException();
+        }
+        modCount++;
+    }
 
 
 }
