@@ -129,8 +129,7 @@ public abstract class MyAbstractList<E> extends AbstractCollection<E> implements
      * @param c 指定的集合
      * @return true则表示修改成功
      */
-    @Override
-    public boolean addAll(int index, Collection<? extends E> c){
+    public boolean addAll(int index, MyCollection<? extends E> c){
         rangeCheckForAdd(index);
         boolean modified = false;
         for (E e : c){
@@ -541,8 +540,7 @@ class SubList<E> extends MyAbstractList<E>{
      * @param c 指定的集合
      * @return true则表示添加成功
      */
-    @Override
-    public boolean addAll(Collection<? extends E> c){
+    public boolean addAll(MyCollection<? extends E> c){
         return addAll(size, c);
     }
 
@@ -553,7 +551,7 @@ class SubList<E> extends MyAbstractList<E>{
      * @return
      */
     @Override
-    public boolean addAll(int index, Collection<? extends E> c){
+    public boolean addAll(int index, MyCollection<? extends E> c){
         rangeCheckForAdd(index);
         int cSize = c.size();
         if (cSize==0){

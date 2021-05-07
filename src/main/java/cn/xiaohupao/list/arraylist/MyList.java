@@ -9,7 +9,7 @@ import java.util.function.UnaryOperator;
  * @author xiaohupao
  * @date 2021/5/5
  */
-public interface MyList <E> extends Collection<E> {
+public interface MyList <E> extends MyCollection<E> {
     /**
      * 返回列表中的元素数
      * @return list中的元素个数
