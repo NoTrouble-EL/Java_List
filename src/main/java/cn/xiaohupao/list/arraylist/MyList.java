@@ -78,7 +78,7 @@ public interface MyList <E> extends MyCollection<E> {
      * @return true则表示此list中包含指定集合中所有的元素
      */
     @Override
-    boolean containsAll(Collection<?> c);
+    boolean containsAll(MyCollection<?> c);
 
     /**
      * 将指定集合中的元素添加到此list的末尾
@@ -86,7 +86,7 @@ public interface MyList <E> extends MyCollection<E> {
      * @return true则表示添加成功
      */
     @Override
-    boolean addAll(Collection<? extends E> c);
+    boolean addAll(MyCollection<? extends E> c);
 
     /**
      * 将指定集合中的所有元素插入此列表中的指定位置
@@ -94,7 +94,7 @@ public interface MyList <E> extends MyCollection<E> {
      * @param c 指定的添加元素集合
      * @return true则表示添加成功
      */
-    boolean addAll(int index, Collection<? extends E> c);
+    boolean addAll(int index, MyCollection<? extends E> c);
 
     /**
      *从此list中删除所有包含在指定集合中的元素
@@ -102,7 +102,7 @@ public interface MyList <E> extends MyCollection<E> {
      * @return true则表示删除成功
      */
     @Override
-    boolean removeAll(Collection<?> c);
+    boolean removeAll(MyCollection<?> c);
 
     /**
      * 仅保留此list中包含指定集合中的元素
@@ -110,7 +110,7 @@ public interface MyList <E> extends MyCollection<E> {
      * @return true则表示list成功更改
      */
     @Override
-    boolean retainAll(Collection<?> c);
+    boolean retainAll(MyCollection<?> c);
 
     /**
      * 用将该运算符应用于该元素的结果替换此列表中的每个元素

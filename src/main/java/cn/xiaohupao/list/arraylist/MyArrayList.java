@@ -77,7 +77,7 @@ public class MyArrayList<E> extends MyAbstractList<E> implements MyList<E>, Rand
      * 通过指定的collection来创建ArrayList
      * @param c 要将元素放入改list的集合
      */
-    public MyArrayList(@NotNull @Flow(sourceIsContainer = true, targetIsContainer = true) Collection<? extends E> c){
+    public MyArrayList(@NotNull @Flow(sourceIsContainer = true, targetIsContainer = true) MyCollection<? extends E> c){
         Object[] a = c.toArray();
         if ((size = a.length) != 0){
             if (c.getClass() == MyArrayList.class){
@@ -283,7 +283,7 @@ public class MyArrayList<E> extends MyAbstractList<E> implements MyList<E>, Rand
      */
     @Override
     @SuppressWarnings("unchecked")
-    public <T> T[] toArray(T[] a){
+    public <T> T[] toArray(T @NotNull [] a){
         if (a.length < size){
             return (T[]) Arrays.copyOf(elementData, size, a.getClass());
         }
@@ -403,6 +403,7 @@ public class MyArrayList<E> extends MyAbstractList<E> implements MyList<E>, Rand
         return false;
     }
 
+
     /**
      * 删除指定索引位置上的元素
      * @param index 指定的索引
@@ -436,7 +437,7 @@ public class MyArrayList<E> extends MyAbstractList<E> implements MyList<E>, Rand
      * @return 返回true则表示添加成功
      */
     @Override
-    public boolean addAll(Collection<? extends E> c){
+    public boolean addAll(MyCollection<? extends E> c){
         Object[] a = c.toArray();
         int numNew = a.length;
         ensureCapacityInternal(size + numNew);
@@ -452,7 +453,7 @@ public class MyArrayList<E> extends MyAbstractList<E> implements MyList<E>, Rand
      * @return 若为true则添加成功
      */
     @Override
-    public boolean addAll(int index, Collection<? extends E> c){
+    public boolean addAll(int index, MyCollection<? extends E> c){
         rangeCheckForAdd(index);
 
         Object[] a = c.toArray();
@@ -521,7 +522,7 @@ public class MyArrayList<E> extends MyAbstractList<E> implements MyList<E>, Rand
      * @return true为操作成功
      */
     @Override
-    public boolean removeAll(Collection<?> c){
+    public boolean removeAll(MyCollection<?> c){
         Objects.requireNonNull(c);
         return batchRemove(c, false);
     }
@@ -532,7 +533,7 @@ public class MyArrayList<E> extends MyAbstractList<E> implements MyList<E>, Rand
      * @return true为操作成功
      */
     @Override
-    public boolean retainAll(Collection<?> c){
+    public boolean retainAll(MyCollection<?> c){
         Objects.requireNonNull(c);
         return batchRemove(c, true);
     }
@@ -543,7 +544,7 @@ public class MyArrayList<E> extends MyAbstractList<E> implements MyList<E>, Rand
      * @param complement 用于操作保留还是移除与传入集合相同元素的开关
      * @return true为操作成功
      */
-    private boolean batchRemove(Collection<?> c, boolean complement){
+    private boolean batchRemove(MyCollection<?> c, boolean complement){
         final Object[] elementData = this.elementData;
         int r = 0, w = 0;
         boolean modified = false;
@@ -900,6 +901,8 @@ public class MyArrayList<E> extends MyAbstractList<E> implements MyList<E>, Rand
             return this.size;
         }
 
+
+
         @Override
         public void add(int index, E e){
             rangeCheckForAdd(index);
@@ -928,12 +931,12 @@ public class MyArrayList<E> extends MyAbstractList<E> implements MyList<E>, Rand
         }
 
         @Override
-        public boolean addAll(Collection<? extends E> c){
+        public boolean addAll(MyCollection<? extends E> c){
             return addAll(this.size, c);
         }
 
         @Override
-        public boolean addAll(int index, Collection<? extends E> c){
+        public boolean addAll(int index, MyCollection<? extends E> c){
             rangeCheckForAdd(index);
             int cSize = c.size();
             if (cSize == 0){

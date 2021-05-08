@@ -9,7 +9,7 @@ import java.util.*;
  * @author xiaohupao
  * @date 2021/5/1
  */
-public abstract class MyAbstractList<E> extends AbstractCollection<E> implements MyList<E> {
+public abstract class MyAbstractList<E> extends MyAbstractCollection<E> implements MyList<E> {
 
     /**
      * 无参构造器
@@ -129,6 +129,7 @@ public abstract class MyAbstractList<E> extends AbstractCollection<E> implements
      * @param c 指定的集合
      * @return true则表示修改成功
      */
+    @Override
     public boolean addAll(int index, MyCollection<? extends E> c){
         rangeCheckForAdd(index);
         boolean modified = false;
@@ -540,6 +541,7 @@ class SubList<E> extends MyAbstractList<E>{
      * @param c 指定的集合
      * @return true则表示添加成功
      */
+    @Override
     public boolean addAll(MyCollection<? extends E> c){
         return addAll(size, c);
     }
@@ -572,6 +574,8 @@ class SubList<E> extends MyAbstractList<E>{
     public Iterator<E> iterator(){
         return listIterator();
     }
+
+
 
     /**
      * 在指定索引位置处获取列表迭代器

@@ -79,21 +79,21 @@ public interface MyCollection<E> extends Iterable<E> {
      * @param c 指定的集合
      * @return true则表示此集合包含指定元素的所有元素
      */
-    boolean containsAll(Collection<?> c);
+    boolean containsAll(MyCollection<?> c);
 
     /**
      * 在此集合的尾部添加指定集合中包含的所有元素
      * @param c 指定的集合
      * @return true则表示添加成功
      */
-    boolean addAll(Collection<? extends E> c);
+    boolean addAll(MyCollection<? extends E> c);
 
     /**
      * 删除此集合中在指定集合中出现的元素
      * @param c 指定的集合
      * @return true则表示删除成功
      */
-    boolean removeAll(Collection<?> c);
+    boolean removeAll(MyCollection<?> c);
 
     /**
      * 删除此集合中满足给定条件的所有元素
@@ -118,7 +118,7 @@ public interface MyCollection<E> extends Iterable<E> {
      * @param c 指定的元素
      * @return true则表示集合应调用而发生改变
      */
-    boolean retainAll(Collection<?> c);
+    boolean retainAll(MyCollection<?> c);
 
     /**
      * 清空集合
