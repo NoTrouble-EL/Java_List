@@ -146,11 +146,11 @@ public interface MyCollection<E> extends Iterable<E> {
      * 在此集合中的元素上创建拆分器
      * @return 该集合中元素的分隔符
      */
-    @Contract(pure = true)
+    /*@Contract(pure = true)
     @Override
     default Spliterator<E> spliterator(){
         return Spliterators.spliterator(this, 0);
-    }
+    }*/
 
     /**
      * 获取一个串行流接口

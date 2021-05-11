@@ -227,8 +227,8 @@ public interface MyList <E> extends MyCollection<E> {
      * 在此list上创建拆分器
      * @return 在此列表中的元素上使用分隔符
      */
-    @Override
-    default Spliterator<E> spliterator(){
+    /*@Override
+    default Spliterator<E> spliterator() {
         return Spliterators.spliterator(this, Spliterator.ORDERED);
-    }
+    }*/
 }

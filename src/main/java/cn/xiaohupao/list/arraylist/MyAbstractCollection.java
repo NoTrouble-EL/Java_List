@@ -3,6 +3,7 @@ package cn.xiaohupao.list.arraylist;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Objects;
 
@@ -10,7 +11,7 @@ import java.util.Objects;
  * @Author: xiaohupao
  * @Date: 2021/5/8 9:09
  */
-public abstract class MyAbstractCollection<E> implements MyCollection<E>{
+public abstract class MyAbstractCollection<E> implements Collection<E> {
     /**
      * 空间构造
      */
@@ -199,7 +200,7 @@ public abstract class MyAbstractCollection<E> implements MyCollection<E>{
      * @return true则表示此集合包含指定集合中的所有元素
      */
     @Override
-    public boolean containsAll(MyCollection<?> c) {
+    public boolean containsAll(Collection<?> c) {
         for (Object e : c){
             if (!contains(e)){
                 return false;
@@ -214,7 +215,7 @@ public abstract class MyAbstractCollection<E> implements MyCollection<E>{
      * @return true则表示修改成功
      */
     @Override
-    public boolean addAll(MyCollection<? extends E> c) {
+    public boolean addAll(Collection<? extends E> c) {
         boolean modified = false;
         for (E e : c){
             if (add(e)){
@@ -230,7 +231,7 @@ public abstract class MyAbstractCollection<E> implements MyCollection<E>{
      * @return true则表示修改成功
      */
     @Override
-    public boolean removeAll(MyCollection<?> c) {
+    public boolean removeAll(Collection<?> c) {
         Objects.requireNonNull(c);
         boolean modified = false;
         Iterator<?> it = iterator();
@@ -249,7 +250,7 @@ public abstract class MyAbstractCollection<E> implements MyCollection<E>{
      * @return true则表示修改成功
      */
     @Override
-    public boolean retainAll(MyCollection<?> c) {
+    public boolean retainAll(Collection<?> c) {
         Objects.requireNonNull(c);
         boolean modified = false;
         Iterator<E> it = iterator();

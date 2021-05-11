@@ -9,7 +9,7 @@ import java.util.*;
  * @author xiaohupao
  * @date 2021/5/1
  */
-public abstract class MyAbstractList<E> extends MyAbstractCollection<E> implements MyList<E> {
+public abstract class MyAbstractList<E> extends MyAbstractCollection<E> implements List<E> {
 
     /**
      * 无参构造器
@@ -130,7 +130,7 @@ public abstract class MyAbstractList<E> extends MyAbstractCollection<E> implemen
      * @return true则表示修改成功
      */
     @Override
-    public boolean addAll(int index, MyCollection<? extends E> c){
+    public boolean addAll(int index, Collection<? extends E> c){
         rangeCheckForAdd(index);
         boolean modified = false;
         for (E e : c){
@@ -346,7 +346,7 @@ public abstract class MyAbstractList<E> extends MyAbstractCollection<E> implemen
      */
     @NotNull
     @Override
-    public MyList<E> subList(int fromIndex, int toIndex) {
+    public List<E> subList(int fromIndex, int toIndex) {
         return (this instanceof RandomAccess ?
                 new RandomAccessSubList<>(this, fromIndex, toIndex) :
                 new SubList<>(this, fromIndex, toIndex));
@@ -542,7 +542,7 @@ class SubList<E> extends MyAbstractList<E>{
      * @return true则表示添加成功
      */
     @Override
-    public boolean addAll(MyCollection<? extends E> c){
+    public boolean addAll(Collection<? extends E> c){
         return addAll(size, c);
     }
 
@@ -553,7 +553,7 @@ class SubList<E> extends MyAbstractList<E>{
      * @return
      */
     @Override
-    public boolean addAll(int index, MyCollection<? extends E> c){
+    public boolean addAll(int index, Collection<? extends E> c){
         rangeCheckForAdd(index);
         int cSize = c.size();
         if (cSize==0){
@@ -685,7 +685,7 @@ class SubList<E> extends MyAbstractList<E>{
         };
     }
     @Override
-    public MyList<E> subList(int fromIndex, int toIndex){
+    public List<E> subList(int fromIndex, int toIndex){
         return new SubList<>(this, fromIndex, toIndex);
     }
 
