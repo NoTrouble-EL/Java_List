@@ -4,6 +4,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.function.Consumer;
 
 /**
  * @Author: xiaohupao
@@ -302,7 +303,7 @@ public class MyLinkedList<E> extends MyAbstractSequentialList<E> implements List
      * @return true则表示添加成功
      */
     @Override
-    public boolean addAll(Collection<? extends E> c){
+    public boolean addAll(@NotNull Collection<? extends E> c){
         return addAll(size, c);
     }
 
@@ -429,7 +430,7 @@ public class MyLinkedList<E> extends MyAbstractSequentialList<E> implements List
     /**
      * 删除指定索引位置上的结点，并返回删除结点上的值
      * @param index 指定的索引位置
-     * @return
+     * @return 删除元素的值
      */
     @Override
     public E remove(int index){
@@ -618,56 +619,276 @@ public class MyLinkedList<E> extends MyAbstractSequentialList<E> implements List
         return true;
     }
 
+    /**
+     * 检索链表中的首结点中的元素，若链表为空则返回null
+     * @return 链表中首结点中的元素值
+     */
+    @Override
+    public E peekFirst(){
+        final Node<E> f = first;
+        return (f == null) ? null : f.item;
+    }
+
+    /**
+     * 检索链表中的尾结点中的元素，若链表为空则返回null
+     * @return 链表中的尾结点中的元素值
+     */
+    @Override
+    public E peekLast(){
+        final Node<E> l = last;
+        return (l == null) ? null : l.item;
+    }
+
+    /**
+     * 检索并删除链表中的首结点，并返回首结点的元素值，若链表为空则返回null
+     * @return 若链表为空则返回null，否则返回首结点的元素值
+     */
     @Override
     public E pollFirst() {
-        return null;
+        final Node<E> f = first;
+        return (f == null) ? null : unlinkFirst(f);
     }
 
+    /**
+     *  检索并删除链表中的尾结点，并返回尾结点的元素值，若链表为空则返回null
+     * @return 若链表为空则返回null，否则返回尾结点的元素值
+     */
     @Override
     public E pollLast() {
-        return null;
+        final Node<E> l = last;
+        return (l == null) ? null : unlinkLast(l);
     }
 
+    /**
+     * 将元素压入这个链表的堆栈中，在首结点前插入元素
+     * @param e 指定的元素
+     */
     @Override
-    public E peekFirst() {
-        return null;
+    public void push(E e){
+        addFirst(e);
     }
 
+    /**
+     * 在这个链表堆栈中弹出一个元素，删除并返回首结点中的元素
+     * @return 首结点的元素值
+     */
     @Override
-    public E peekLast() {
-        return null;
+    public E pop(){
+        return removeFirst();
     }
 
+    /**
+     * 移除链表中第一次出现的指定元素
+     * @param o 指定的元素
+     * @return true则表示移除成功
+     */
     @Override
     public boolean removeFirstOccurrence(Object o) {
-        return false;
+        return remove(o);
     }
 
+    /**
+     * 移除链表中最后一次出现的指定元素
+     * @param o 指定的元素
+     * @return true则表示移除成功
+     */
     @Override
     public boolean removeLastOccurrence(Object o) {
+        if (o == null){
+            for (Node<E> x = last; x != null; x = x.prev){
+                if (x.item == null){
+                    unlink(x);
+                    return true;
+                }
+            }
+        }else{
+            for (Node<E> x = last; x != null; x = x.prev){
+                if (o.equals(x.item)){
+                    unlink(x);
+                    return true;
+                }
+            }
+        }
         return false;
     }
 
+    /**
+     * 从列表的指定位置获取到列表迭代器
+     * @param index 迭代器所在的索引位置
+     * @return 列表迭代器
+     */
     @Override
-    public void push(E e) {
-
+    public ListIterator<E> listIterator(int index){
+        checkPositionIndex(index);
+        return new ListItr(index);
     }
 
-    @Override
-    public E pop() {
-        return null;
-    }
+    private class ListItr implements ListIterator<E>{
+        private Node<E> lastReturned;
+        private Node<E> next;
+        private int nextIndex;
+        private int expectedModCount = modCount;
 
+        /**
+         * 有参构造器
+         * @param index 指定的索引
+         */
+        ListItr(int index){
+            next = (index == size) ? null : node(index);
+            nextIndex = index;
+        }
 
-    @NotNull
-    @Override
-    public Iterator<E> descendingIterator() {
-        return null;
-    }
+        /**
+         * 判断当前迭代器所在的位置，是否还有下一个元素
+         * @return true则表示还有下一个元素
+         */
+        @Override
+        public boolean hasNext() {
+            return nextIndex < size;
+        }
 
-    @Override
-    public ListIterator<E> listIterator(int index) {
-        return null;
+        /**
+         * 返回迭代器所在处的元素值，并将迭代器向后移动一个位置
+         * @return 迭代器所在出的元素值
+         */
+        @Override
+        public E next() {
+            checkForComodification();
+            if (!hasNext()){
+                throw new NoSuchElementException();
+            }
+            //让前一个结点指针指向当前结点
+            //让当前指针指向下一个结点
+            //当前索引位置++
+            //返回当前结点的元素值
+            lastReturned = next;
+            next = next.next;
+            nextIndex++;
+            return lastReturned.item;
+        }
+
+        /**
+         * 判断当前迭代器所在的位置，是否存在前一个元素
+         * @return true则表示还有前一个元素
+         */
+        @Override
+        public boolean hasPrevious() {
+            return nextIndex > 0;
+        }
+
+        /**
+         * 返回迭代器所在位置前一个元素的值
+         * @return 迭代器所在位置前一个元素的值
+         */
+        @Override
+        public E previous() {
+            checkForComodification();
+            if (!hasPrevious()){
+                throw new NoSuchElementException();
+            }
+
+            lastReturned = next = (next == null) ? last : next.prev;
+            nextIndex--;
+            return lastReturned.item;
+        }
+
+        /**
+         * 返回迭代器所在的索引位置
+         * @return 迭代器所在的索引位置
+         */
+        @Override
+        public int nextIndex() {
+            return nextIndex;
+        }
+
+        /**
+         * 返回迭代器所在位置的前一个索引位置
+         * @return 代器所在位置的前一个索引位置
+         */
+        @Override
+        public int previousIndex() {
+            return nextIndex - 1;
+        }
+
+        /**
+         * 移除迭代器所在位置的前一个结点
+         */
+        @Override
+        public void remove() {
+            checkForComodification();
+            if (lastReturned == null){
+                throw new IllegalStateException();
+            }
+
+            //获取当前迭代器所在位置的前一个结点的下一个结点
+            Node<E> lastNext = lastReturned.next;
+            //删除前一个结点
+            unlink(lastReturned);
+            //若当前迭代器所在位置的结点和前一个结点指向相同，则让迭代器下移，否则将当前索引位置--
+            if (next == lastReturned){
+                next = lastNext;
+            }else{
+                nextIndex--;
+            }
+            lastReturned = null;
+            expectedModCount++;
+        }
+
+        /**
+         * 在迭代器所在位置设置前一个结点的元素
+         * @param e 指定的元素
+         */
+        @Override
+        public void set(E e) {
+            if (lastReturned == null){
+                throw new IllegalStateException();
+            }
+            checkForComodification();
+            lastReturned.item = e;
+        }
+
+        /**
+         * 在迭代器所在的位置前添加一个结点
+         * @param e 指定的元素
+         */
+        @Override
+        public void add(E e) {
+            checkForComodification();
+            lastReturned = null;
+            if (next == null){
+                linkLast(e);
+            }else{
+                linkBefore(e, next);
+            }
+            nextIndex++;
+            expectedModCount++;
+        }
+
+        /**
+         * 对于链表中的剩余的元素进行操作，直到元素遍历完毕
+         * @param action 进行的操作
+         */
+        @Override
+        public void forEachRemaining(Consumer<? super E> action){
+            Objects.requireNonNull(action);
+            while (modCount == expectedModCount && nextIndex < size){
+                action.accept(next.item);
+                lastReturned = next;
+                next = next.next;
+                nextIndex++;
+            }
+            checkForComodification();
+        }
+
+        /**
+         * 检查是否发生并发修改异常
+         * 实现fail-fast机制
+         */
+        final void checkForComodification(){
+            if (modCount != expectedModCount){
+                throw new ConcurrentModificationException();
+            }
+        }
     }
 
     /**
@@ -703,4 +924,119 @@ public class MyLinkedList<E> extends MyAbstractSequentialList<E> implements List
             this.prev = prev;
         }
     }
+
+    /**
+     * 返回以相反的顺序返回此双端队列中的元素的迭代器
+     * @return 以相反的顺序返回此双端队列中的元素的迭代器
+     */
+    @NotNull
+    @Override
+    public Iterator<E> descendingIterator() {
+        return new DescendingIterator();
+    }
+
+    /**
+     *
+     */
+    private class DescendingIterator implements Iterator<E>{
+        private final ListItr itr = new ListItr(size());
+
+        /**
+         * 判断是否还有下一个结点
+         * @return true则表示还有下一个结点
+         */
+        @Override
+        public boolean hasNext() {
+            return itr.hasPrevious();
+        }
+
+        /**
+         * 去除当前迭代器所在位置上的元素
+         * @return 迭代器所在的位置上的元素
+         */
+        @Override
+        public E next() {
+            return itr.previous();
+        }
+
+        /**
+         * 移除迭代器所在位置的前一个接待你
+         */
+        @Override
+        public void remove(){
+            itr.remove();
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private MyLinkedList<E> superClone(){
+        try {
+            return (MyLinkedList<E>) super.clone();
+        }catch (CloneNotSupportedException e){
+            throw new InternalError(e);
+        }
+    }
+
+    /**
+     * 克隆方法
+     * @return LinkedList实例的一个副本
+     */
+    @Override
+    public Object clone(){
+        MyLinkedList<E> clone = superClone();
+
+        clone.first = clone.last = null;
+        clone.size = 0;
+        clone.modCount = 0;
+
+        for (Node<E> x = first; x != null; x = x.next){
+            clone.add(x.item);
+        }
+
+        return clone;
+    }
+
+    /**
+     * 将LinkedList转化为一个Object数组
+     * @return Object数组
+     */
+    @Override
+    public Object[] toArray(){
+        Object[] result = new Object[size];
+        int i = 0;
+        for (Node<E> x = first; x != null; x = x.next){
+            result[i++] = x.item;
+        }
+        return result;
+    }
+
+    /**
+     * 将LinkedList中的元素转为一个传入数组的类型
+     * 若传入数组的容量小于元素的个数则返回一个新的数组；
+     * 否则将元素拷贝到传入的数组中。
+     * @param a 指定的数组
+     * @param <T> 元素的类型
+     * @return 以数组的类型返回LinkedList中的元素
+     */
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> T[] toArray(T[] a){
+        if (a.length < size){
+            a = (T[]) java.lang.reflect.Array.newInstance(a.getClass().getComponentType(), size);
+        }
+
+        int i = 0;
+        Object[] result = a;
+        for (Node<E> x = first; x != null; x = x.next){
+            result[i++] = x.item;
+        }
+
+        if (a.length > size){
+            a[size] = null;
+        }
+
+        return a;
+    }
+
+    private static final long serialVersionUID = 1998102519960221L;
 }

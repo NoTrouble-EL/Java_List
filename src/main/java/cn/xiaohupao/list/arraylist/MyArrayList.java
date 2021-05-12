@@ -266,7 +266,7 @@ public class MyArrayList<E> extends MyAbstractList<E> implements List<E>, Random
 
     /**
      * 将ArrayList转为一个object数组
-     * @return
+     * @return object数组
      */
     @Override
     public Object[] toArray(){
