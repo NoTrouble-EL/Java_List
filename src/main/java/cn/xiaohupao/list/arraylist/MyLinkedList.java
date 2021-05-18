@@ -1039,4 +1039,138 @@ public class MyLinkedList<E> extends MyAbstractSequentialList<E> implements List
     }
 
     private static final long serialVersionUID = 1998102519960221L;
+
+    /**
+     * 链表的序列化写对象
+     * @param s OOS
+     * @throws java.io.IOException
+     */
+    private void writeObject(java.io.ObjectOutputStream s) throws java.io.IOException{
+        s.defaultWriteObject();
+
+        s.writeInt(size);
+
+        for (Node<E> x = first; x != null; x = x.next){
+            s.writeObject(x.item);
+        }
+    }
+
+    /**
+     * 链表的序列化读对象
+     * @param s OIS
+     * @throws java.io.IOException
+     * @throws ClassNotFoundException
+     */
+    @SuppressWarnings("unchecked")
+    private void readObject(java.io.ObjectInputStream s) throws java.io.IOException, ClassNotFoundException{
+        s.defaultReadObject();
+
+        int size = s.readInt();
+
+        for (int i = 0; i < size; i++){
+            linkLast((E)s.readObject());
+        }
+    }
+
+    /**
+     * 用于返回一个并行遍历迭代器
+     * @return 一个并行遍历迭代器
+     */
+    @Override
+    public Spliterator<E> spliterator(){
+        return new LLSpliterator<E>(this, -1, 0);
+    }
+
+    /**
+     * 并行遍历迭代器
+     * @param <E> 元素类型
+     */
+    static final class LLSpliterator<E> implements Spliterator<E>{
+        static final int BATCH_UNIT = 1 << 10; //批处理数组大小增量
+        static final int MAX_BATCH = 1 << 25; //最大批处理s数组的大小
+        final MyLinkedList<E> list; //除非遍历，否则为null
+        Node<E> current; //当前结点;初始化之前为null
+        int est; //大小估计;初始化为-1
+        int expectedModCount;//期望修改次数初始化为0
+        int batch; //分割的批次大小
+
+        /**
+         * 构造器
+         * @param list 指向外部链表
+         * @param est 大小估计
+         * @param expectedModCount 期望修改次数
+         */
+        LLSpliterator(MyLinkedList<E> list, int est, int expectedModCount){
+            this.list = list;
+            this.est = est;
+            this.expectedModCount = expectedModCount;
+        }
+
+        /**
+         * 返回链表中结点的个数;并初始化
+         * @return 链表中元素结点的个数
+         */
+        final int getEst(){
+            int s;
+            final MyLinkedList<E> lst;
+            if ((s = est) < 0){
+                if ((lst = list) == null){
+                    s = est =0;
+                }else {
+                    expectedModCount = lst.modCount;
+                    current = lst.first;
+                    s = est = lst.size;
+                }
+            }
+            return s;
+        }
+
+        /**
+         * 估计链表中元素的个数
+         * @return 链表中元素的个数
+         */
+        @Override
+        public long estimateSize(){
+            return (long) getEst();
+        }
+
+        /**
+         * 分割链表
+         * @return 返回一个新的并行遍历迭代器
+         */
+        @Override
+        public Spliterator<E> trySplit() {
+            Node<E> p;
+            int s = getEst();
+            if (s > 1 && (p = current) != null){
+                int n = batch + BATCH_UNIT;
+                if (n > s){
+                    n = s;
+                }
+                if (n > MAX_BATCH){
+                    n = MAX_BATCH;
+                }
+                Object[] a = new Object[n];
+                int j = 0;
+                do {
+                    a[j++] = p.item;
+                }while ((p = p.next) != null && j < n);
+                current = p;
+                batch = j;
+                est = s - j;
+                return Spliterators.spliterator(a, 0, j, Spliterator.ORDERED);
+            }
+            return null;
+        }
+        @Override
+        public boolean tryAdvance(Consumer<? super E> action) {
+            return false;
+        }
+
+
+        @Override
+        public int characteristics() {
+            return Spliterator.ORDERED | Spliterator.SIZED | Spliterator.SUBSIZED;
+        }
+    }
 }

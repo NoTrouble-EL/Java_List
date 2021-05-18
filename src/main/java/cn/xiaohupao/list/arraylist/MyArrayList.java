@@ -83,6 +83,7 @@ public class MyArrayList<E> extends MyAbstractList<E> implements List<E>, Random
             if (c.getClass() == MyArrayList.class){
                 elementData = a;
             }else{
+                //Object[].class将返回数组中实际的类型
                 elementData = Arrays.copyOf(a, size, Object[].class);
             }
         }else{
